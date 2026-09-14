@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026.09.14.5
+- Added brand images (`custom_components/label_master_control/brand/icon.png`, `icon@2x.png`, `logo.png`, `logo@2x.png`) so the integration shows a proper icon in Settings -> Devices & Services and the HACS store, same pattern as Device Emulator.
+
 ## 2026.09.14.4
 - Fixed the master fan entity not responding to on/off at all. Modern Home Assistant requires a `FanEntity` to declare `FanEntityFeature.TURN_ON`/`TURN_OFF` in `supported_features` before it will call `async_turn_on`/`async_turn_off` - without them the methods were implemented but never invoked, so toggling the fan silently did nothing. Switch and light aren't affected; only `FanEntity` has this explicit-opt-in requirement.
 

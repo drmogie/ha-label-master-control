@@ -25,7 +25,7 @@ Copy `custom_components/label_master_control` into your `config/custom_component
 
 ## Use
 
-Settings -> Devices & Services -> Add Integration -> **Label Master Control** -> pick a domain -> pick labels -> name it -> done.
+Settings -> Devices & Services -> Add Integration -> **Label Master Control**. Its icon (built from the logo you provided) should show up automatically - Home Assistant 2026.3+ reads brand images straight out of the integration's own `brand/` folder. Pick a domain -> pick labels -> name it -> done.
 
 Repeat to build as many devices as you want. Each shows up under Settings -> Devices & Services -> Label Master Control.
 
