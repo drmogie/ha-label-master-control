@@ -2,23 +2,38 @@
   "config": {
     "step": {
       "user": {
-        "title": "Set up Label Master Control",
-        "description": "This turns the feature on for your whole instance - it does not ask you to pick a label. Afterward, labeling any light, switch, or fan (in that entity's own settings) automatically creates or updates a matching master device.",
+        "title": "Build a Label Master Control device",
+        "description": "Pick the domain this device controls. This is fixed for the device's lifetime - a different domain means building a different device.",
         "data": {
-          "grouping_mode": "Grouping mode"
+          "target_domain": "Domain"
+        }
+      },
+      "labels": {
+        "title": "Pick labels",
+        "description": "Every {target_domain} entity that carries ALL of these labels becomes a member of this device.",
+        "data": {
+          "label_ids": "Labels"
+        }
+      },
+      "name": {
+        "title": "Name this device",
+        "description": "Suggested from the domain and labels you picked - type your own if you'd rather.",
+        "data": {
+          "name": "Name"
         }
       }
     },
     "abort": {
-      "already_configured": "Label Master Control is already set up."
+      "already_configured": "A device for this domain and label combination already exists."
     }
   },
   "options": {
     "step": {
       "init": {
         "title": "Label Master Control options",
+        "description": "Change which labels this device requires. The domain can't be changed here - build a new device for that.",
         "data": {
-          "grouping_mode": "Grouping mode"
+          "label_ids": "Labels"
         }
       }
     }

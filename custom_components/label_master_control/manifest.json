@@ -5,8 +5,8 @@
   "config_flow": true,
   "documentation": "https://github.com/drmogie/ha-label-master-control",
   "issue_tracker": "https://github.com/drmogie/ha-label-master-control/issues",
-  "integration_type": "hub",
+  "integration_type": "device",
   "iot_class": "calculated",
   "requirements": [],
-  "version": "2026.09.14.2"
+  "version": "2026.09.14.3"
 }

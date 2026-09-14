@@ -1,7 +1,10 @@
 # Changelog
 
+## 2026.09.14.3
+- Reworked device creation back to manual: the integration no longer auto-discovers a device the moment two entities happen to share labels (that produced too many unwanted devices). Add Integration now runs a 3-step wizard - pick a domain (light/switch/fan), pick one or more labels, name the device (suggested from domain + labels, or your own) - the same "pick a type, then name it" shape as Device Emulator's own flow. Dropped the "grouping mode" choice (exact match vs. shared label pairs) along with auto-discovery. What's unchanged: once a device exists, its *membership* still tracks the entity registry live - labeling a new entity with the same label set joins it automatically, no reload. `manifest.json`'s `integration_type` reverts to `device` (one device per config entry, like 2026.09.14.1) since each entry is a single manually-built device again.
+
 ## 2026.09.14.2
-- Reworked the whole mechanism: the integration no longer asks you to pick a label through a config flow. Instead it watches the entity registry directly - labeling any light/switch/fan through that entity's own settings automatically creates/updates/removes a matching domain-scoped master device, live. Added a "grouping mode" choice (exact label-set match, or shared label pairs) and a hidden per-light-group "Representative light" select entity to replace the old per-device options flow.
+- Reworked the whole mechanism: the integration no longer asks you to pick a label through a config flow. Instead it watches the entity registry directly - labeling any light/switch/fan through that entity's own settings automatically creates/updates/removes a matching domain-scoped master device, live. Added a "grouping mode" choice (exact label-set match, or shared label pairs) and a hidden per-light-group "Representative light" select entity to replace the old per-device options flow. Superseded by 2026.09.14.3's revert to manual device creation.
 
 ## 2026.09.14.1
 - Initial release (superseded by 2026.09.14.2's rework): config flow (pick a label), live label-membership tracking via the entity registry, and master switch/fan/light entities with any-on aggregate state and fan-out commands.

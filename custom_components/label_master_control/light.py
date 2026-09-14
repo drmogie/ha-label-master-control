@@ -1,12 +1,12 @@
-"""Master light platform: one entity per (light, label-combo) group.
+"""Master light entity: one per light-domain device you built in the wizard.
 
 Brightness/color come from a "representative" member - by default the
-first member found on, but pinnable via the paired hidden select entity
-this platform's sibling (select.py) creates alongside it on the same
-device. A real LightEntity's async_turn_on receives brightness/hs_color/
-color_temp_kelvin directly in kwargs, so unlike the template-light
-version this replaces, there's no need for separate set_level/set_hs/
-set_temperature steps.
+first member found on, but pinnable via the paired "Representative
+light" select entity this platform's sibling (select.py) creates
+alongside it on the same device. A real LightEntity's async_turn_on
+receives brightness/hs_color/color_temp_kelvin directly in kwargs, so
+unlike the template-light version this replaces, there's no need for
+separate set_level/set_hs/set_temperature steps.
 """
 from __future__ import annotations
 
@@ -22,66 +22,40 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN, FIRST_FOUND
-from .entity import GroupEntity
-from .group_tracker import GroupKey, GroupTracker
+from .aggregator import LabelAggregator
+from .const import CONF_TARGET_DOMAIN, DOMAIN, FIRST_FOUND
+from .entity import MasterEntity
 
-_DOMAIN_KEY = "light"
 _SUPPORTED_MODES = {ColorMode.COLOR_TEMP, ColorMode.HS}
 
 
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
-    tracker: GroupTracker = hass.data[DOMAIN][entry.entry_id]["tracker"]
-    live: dict[GroupKey, MasterLight] = {}
-
-    def _add(key: GroupKey) -> None:
-        if key[0] != _DOMAIN_KEY or key in live:
-            return
-        entity = MasterLight(tracker, key)
-        live[key] = entity
-        async_add_entities([entity])
-
-    def _remove(key: GroupKey) -> None:
-        entity = live.pop(key, None)
-        if entity:
-            hass.async_create_task(entity.async_remove(force_remove=True))
-
-    def _changed(key: GroupKey) -> None:
-        entity = live.get(key)
-        if entity:
-            entity.refresh_membership()
-
-    for key in tracker.groups_for_domain(_DOMAIN_KEY):
-        _add(key)
-
-    tracker.on_added(_add)
-    tracker.on_removed(_remove)
-    tracker.on_changed(_changed)
+    if entry.data[CONF_TARGET_DOMAIN] != "light":
+        return
+    aggregator = hass.data[DOMAIN][entry.entry_id]["aggregator"]
+    async_add_entities([MasterLight(entry, aggregator)])
 
 
-def representative_select_unique_id(key: GroupKey) -> str:
-    """Deterministic unique_id of the select entity paired with a light group."""
-    domain, label_ids = key
-    return f"{domain}_{'_'.join(sorted(label_ids))}_representative"
+def representative_select_unique_id(entry: ConfigEntry) -> str:
+    """Deterministic unique_id of the select entity paired with this light."""
+    return f"{entry.entry_id}_representative"
 
 
-class MasterLight(GroupEntity, LightEntity):
-    _attr_name = None
+class MasterLight(MasterEntity, LightEntity):
     _attr_supported_color_modes = _SUPPORTED_MODES
     _attr_min_color_temp_kelvin = 2000
     _attr_max_color_temp_kelvin = 6500
 
-    def __init__(self, tracker: GroupTracker, key: GroupKey) -> None:
-        super().__init__(tracker, key)
-        domain, label_ids = key
-        self._attr_unique_id = f"{domain}_{'_'.join(sorted(label_ids))}_light"
+    def __init__(self, entry: ConfigEntry, aggregator: LabelAggregator) -> None:
+        super().__init__(entry, aggregator)
+        self._attr_unique_id = f"{entry.entry_id}_light"
 
     def _preferred_entity_id(self) -> str | None:
         registry = er.async_get(self.hass)
         select_entity_id = registry.async_get_entity_id(
-            "select", DOMAIN, representative_select_unique_id(self._key)
+            "select", DOMAIN, representative_select_unique_id(self._entry)
         )
         if not select_entity_id:
             return None
@@ -91,7 +65,7 @@ class MasterLight(GroupEntity, LightEntity):
         return state.state
 
     def _representative_state(self):
-        members = self.members
+        members = self._aggregator.members()
         if not members:
             return None
         preferred = self._preferred_entity_id()
@@ -107,7 +81,7 @@ class MasterLight(GroupEntity, LightEntity):
 
     @property
     def is_on(self) -> bool:
-        return self.is_any_on()
+        return self._aggregator.is_any_on()
 
     @property
     def color_mode(self):
@@ -131,9 +105,10 @@ class MasterLight(GroupEntity, LightEntity):
         return state.attributes.get(ATTR_COLOR_TEMP_KELVIN) if state else None
 
     async def async_turn_on(self, **kwargs) -> None:
-        if not self.members:
+        members = self._aggregator.members()
+        if not members:
             return
-        data = {"entity_id": self.members}
+        data = {"entity_id": members}
         if ATTR_BRIGHTNESS in kwargs:
             data[ATTR_BRIGHTNESS] = kwargs[ATTR_BRIGHTNESS]
         if ATTR_HS_COLOR in kwargs:
@@ -143,7 +118,8 @@ class MasterLight(GroupEntity, LightEntity):
         await self.hass.services.async_call("light", "turn_on", data, blocking=True)
 
     async def async_turn_off(self, **kwargs) -> None:
-        if self.members:
+        members = self._aggregator.members()
+        if members:
             await self.hass.services.async_call(
-                "light", "turn_off", {"entity_id": self.members}, blocking=True
+                "light", "turn_off", {"entity_id": members}, blocking=True
             )
