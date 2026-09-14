@@ -2,15 +2,15 @@
   "config": {
     "step": {
       "user": {
-        "title": "Add a Label Master Control device",
-        "description": "Pick a label. Every entity carrying it becomes a member this device tracks and controls.",
+        "title": "Set up Label Master Control",
+        "description": "This turns the feature on for your whole instance - it does not ask you to pick a label. Afterward, labeling any light, switch, or fan (in that entity's own settings) automatically creates or updates a matching master device.",
         "data": {
-          "label_id": "Label"
+          "grouping_mode": "Grouping mode"
         }
       }
     },
     "abort": {
-      "already_configured": "This label already has a Label Master Control device."
+      "already_configured": "Label Master Control is already set up."
     }
   },
   "options": {
@@ -18,8 +18,7 @@
       "init": {
         "title": "Label Master Control options",
         "data": {
-          "label_id": "Label",
-          "representative_light": "Representative light (drives the master light's reported brightness/color)"
+          "grouping_mode": "Grouping mode"
         }
       }
     }

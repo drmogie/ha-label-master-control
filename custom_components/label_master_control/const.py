@@ -4,14 +4,19 @@ from __future__ import annotations
 DOMAIN = "label_master_control"
 MANUFACTURER = "Label Master Control"
 
-CONF_LABEL_ID = "label_id"
-CONF_REPRESENTATIVE_LIGHT = "representative_light"
+CONF_GROUPING_MODE = "grouping_mode"
+GROUPING_EXACT = "exact"
+GROUPING_PAIRS = "pairs"
+GROUPING_MODES = [GROUPING_EXACT, GROUPING_PAIRS]
+DEFAULT_GROUPING_MODE = GROUPING_EXACT
 
-# Domains this integration builds a master entity for. Every entry
-# forwards all three platforms unconditionally (see __init__.py) - each
-# platform's master entity just reports "off / no members" when nothing
-# of that domain currently carries the label, which is simpler and more
-# robust under live relabeling than trying to add/remove platforms on
-# the fly as membership changes.
-PLATFORMS = ["switch", "fan", "light"]
+# Domains this integration builds a master entity for. "select" is also
+# forwarded as a platform, but only to host the light domain's hidden
+# "representative" picker - it is never itself a source of group
+# membership.
 SUPPORTED_DOMAINS = ("light", "switch", "fan")
+PLATFORMS = ["switch", "fan", "light", "select"]
+
+SINGLETON_UNIQUE_ID = "global"
+
+FIRST_FOUND = "__first_found__"
