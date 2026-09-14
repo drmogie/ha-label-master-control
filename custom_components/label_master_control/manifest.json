@@ -1,0 +1,12 @@
+{
+  "domain": "label_master_control",
+  "name": "Label Master Control",
+  "codeowners": ["@drmogie"],
+  "config_flow": true,
+  "documentation": "https://github.com/drmogie/ha-label-master-control",
+  "issue_tracker": "https://github.com/drmogie/ha-label-master-control/issues",
+  "integration_type": "device",
+  "iot_class": "calculated",
+  "requirements": [],
+  "version": "2026.09.14.1"
+}

@@ -1,0 +1,27 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Add a Label Master Control device",
+        "description": "Pick a label. Every entity carrying it becomes a member this device tracks and controls.",
+        "data": {
+          "label_id": "Label"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "This label already has a Label Master Control device."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Label Master Control options",
+        "data": {
+          "label_id": "Label",
+          "representative_light": "Representative light (drives the master light's reported brightness/color)"
+        }
+      }
+    }
+  }
+}
