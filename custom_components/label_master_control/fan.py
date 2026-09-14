@@ -21,7 +21,16 @@ async def async_setup_entry(
 
 
 class MasterFan(MasterEntity, FanEntity):
-    _attr_supported_features = FanEntityFeature.SET_SPEED | FanEntityFeature.PRESET_MODE
+    # TURN_ON / TURN_OFF must be declared explicitly - modern Home
+    # Assistant no longer calls async_turn_on/async_turn_off for a
+    # FanEntity that doesn't advertise them, even though the methods
+    # are implemented below. Without this, on/off silently does nothing.
+    _attr_supported_features = (
+        FanEntityFeature.TURN_ON
+        | FanEntityFeature.TURN_OFF
+        | FanEntityFeature.SET_SPEED
+        | FanEntityFeature.PRESET_MODE
+    )
 
     def __init__(self, entry: ConfigEntry, aggregator: LabelAggregator) -> None:
         super().__init__(entry, aggregator)

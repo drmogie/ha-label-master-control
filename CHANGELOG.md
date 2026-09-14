@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026.09.14.4
+- Fixed the master fan entity not responding to on/off at all. Modern Home Assistant requires a `FanEntity` to declare `FanEntityFeature.TURN_ON`/`TURN_OFF` in `supported_features` before it will call `async_turn_on`/`async_turn_off` - without them the methods were implemented but never invoked, so toggling the fan silently did nothing. Switch and light aren't affected; only `FanEntity` has this explicit-opt-in requirement.
+
 ## 2026.09.14.3
 - Reworked device creation back to manual: the integration no longer auto-discovers a device the moment two entities happen to share labels (that produced too many unwanted devices). Add Integration now runs a 3-step wizard - pick a domain (light/switch/fan), pick one or more labels, name the device (suggested from domain + labels, or your own) - the same "pick a type, then name it" shape as Device Emulator's own flow. Dropped the "grouping mode" choice (exact match vs. shared label pairs) along with auto-discovery. What's unchanged: once a device exists, its *membership* still tracks the entity registry live - labeling a new entity with the same label set joins it automatically, no reload. `manifest.json`'s `integration_type` reverts to `device` (one device per config entry, like 2026.09.14.1) since each entry is a single manually-built device again.
 
