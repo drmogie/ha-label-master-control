@@ -15,6 +15,18 @@ Build a "master" device that toggles every light, switch, or fan sharing a set o
 - Want to see exactly what a device is controlling right now? Open the master entity's More info dialog and check the **Related** tab - it lists the current members live, the same way a native Light/Switch/Cover Group shows what it's made of.
 - Every device also gets a **Members** diagnostic sensor - its state is the live member count, right on the device's own page, no need to open a specific entity to check. Two more diagnostic sensors, **Members On** and **Members Off**, split that count live so you can see how many are currently on vs. off without opening anything.
 
+## Companion card: Matrix Card
+
+A read-only Lovelace card auto-loads with the integration - no manual resource to add. Drop it on a dashboard:
+
+```yaml
+type: custom:ha-label-master-control-card
+```
+
+It shows a grid: one row per category+domain combo (e.g. "Default Light", "Extra Fan"), one column per Area, one cell per device that exists for that combo - on/off state, or "-" where you haven't built one yet. It finds every Label Master Control device itself; a device lands in its row by whichever category name (default "Default"/"Extra", editable in the card's own GUI editor) appears in its label set, and in its column by its own assigned Area (Settings -> Devices -> that device -> Area). A **Recheck** button (top right) re-scans the entity/device/area registries directly, in case anything looks stale.
+
+The card only displays - it never creates, edits, or relabels anything. Build a device for a combo that shows "-" with the wizard above, same as always.
+
 ## Install
 
 ### HACS

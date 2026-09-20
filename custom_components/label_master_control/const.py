@@ -27,3 +27,13 @@ SUPPORTED_DOMAINS = ("light", "switch", "fan")
 PLATFORMS = ["switch", "fan", "light", "select", "sensor"]
 
 FIRST_FOUND = "__first_found__"
+
+# Companion Lovelace card (Matrix Card, added 2026.09.20) - served the
+# same way ha-piper-browser-speaker serves its own card: the whole www/
+# folder registered as one static directory, plus an extra_js_url so it
+# auto-loads on every dashboard with no manual Lovelace resource. See
+# __init__.py's frontend-registration block.
+CARD_FILENAME = "ha-label-master-control-card.js"
+STATIC_URL_ROOT = f"/{DOMAIN}"
+CARD_URL = f"{STATIC_URL_ROOT}/{CARD_FILENAME}"
+CARD_VERSION = "2026.09.20.04"

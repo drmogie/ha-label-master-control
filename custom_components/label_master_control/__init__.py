@@ -6,24 +6,59 @@ is no auto-discovery, and nothing is created without you explicitly
 adding it. What DOES stay live is membership: label a new light with the
 same labels a device was built from, and it joins that device's
 aggregate automatically, no reload - see aggregator.py.
+
+Also serves the companion Matrix Card (added 2026.09.20) the same way
+ha-piper-browser-speaker serves its own card: the whole www/ folder is
+registered as one static directory, plus an extra_js_url, so it
+auto-loads on every dashboard with no manual Lovelace resource needed.
 """
 from __future__ import annotations
 
+import asyncio
+
+from homeassistant.components.frontend import add_extra_js_url
+from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 
 from .aggregator import LabelAggregator
-from .const import CONF_LABEL_IDS, CONF_TARGET_DOMAIN, DOMAIN, MANUFACTURER, PLATFORMS
+from .const import (
+    CARD_URL,
+    CARD_VERSION,
+    CONF_LABEL_IDS,
+    CONF_TARGET_DOMAIN,
+    DOMAIN,
+    MANUFACTURER,
+    PLATFORMS,
+    STATIC_URL_ROOT,
+)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up one manually-built Label Master Control device."""
+    hass.data.setdefault(DOMAIN, {})
+
+    # Same concurrent-first-setup guard as ha-piper-browser-speaker: Home
+    # Assistant can set up several of this integration's config entries at
+    # once at startup, and without a lock two of them can both see the
+    # frontend as "not yet registered" and both try to register the same
+    # static path - the second call throws and that entry's whole setup
+    # fails. The lock makes check-then-register-then-flag atomic.
+    lock = hass.data[DOMAIN].setdefault("_setup_lock", asyncio.Lock())
+    async with lock:
+        if not hass.data[DOMAIN].get("_frontend_registered"):
+            www_dir = hass.config.path("custom_components", DOMAIN, "www")
+            await hass.http.async_register_static_paths(
+                [StaticPathConfig(STATIC_URL_ROOT, www_dir, True)]
+            )
+            add_extra_js_url(hass, f"{CARD_URL}?v={CARD_VERSION}")
+            hass.data[DOMAIN]["_frontend_registered"] = True
+
     label_ids = entry.options.get(CONF_LABEL_IDS, entry.data.get(CONF_LABEL_IDS, []))
     aggregator = LabelAggregator(hass, entry.data[CONF_TARGET_DOMAIN], label_ids)
     await aggregator.async_start()
 
-    hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = {"aggregator": aggregator}
 
     device_registry = dr.async_get(hass)

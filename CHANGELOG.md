@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026.09.20.04
+- Added a companion Lovelace card: **Matrix Card** (`custom:ha-label-master-control-card`). Read-only status grid - one row per category+domain combo (e.g. "Default Light", "Extra Fan"), one column per Area, showing each device's on/off state or "-" where no device exists yet for that combo. Auto-discovers every device on the dashboard with no required config; a Recheck button re-scans the entity/device/area registries directly in case anything's out of sync. Served automatically (no manual Lovelace resource needed), same pattern as Piper Browser Speaker's own card.
+- Every master entity now also exposes a `labels` attribute (its configured label set, by name) alongside the existing `entity_id` members attribute - added so the new Matrix Card (or anything else) can tell which category a device represents without guessing from its display name.
+
 ## 2026.09.20.03
 - Added two more diagnostic sensors alongside **Members**: **Members On** and **Members Off**, each showing a live count (and, as its `entity_id` attribute, the matching subset) so you can see at a glance how many of a device's matched entities are currently on vs. off, right on the device's own page.
 
