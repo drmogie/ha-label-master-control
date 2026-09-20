@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026.09.20.06
+- Added a Domain/Labels sort toggle to the Matrix Card, in the table's top-left corner (above the row labels, beside the Area column headers). "Domain" groups rows by domain first (Light Default, Light Extra, Switch Default, ...) - the new default. "Labels" groups by category first (Default Light, Default Switch, ..., Extra Light, ...) - the previous default. Each row's own text still always reads "<Domain> <Category>" either way; only the grouping/order changes. Remembered per-browser, same as the right-click Area hide.
+
 ## 2026.09.20.05
 - Fixed a rendering glitch in the Matrix Card where scrolling horizontally could show a sliver of a scrolled-past Area's data bleeding past the card's left edge, in front of the sticky row-label column. Root cause: `border-collapse: collapse` combined with `position: sticky` table cells is a known rendering bug in Chromium-based WebViews - switched to `border-collapse: separate` with per-cell borders, added `overflow: hidden` to the card itself, and gave the sticky column an explicit z-index and opaque background.
 - Row labels now read "Light Default" / "Fan Extra" (domain, then category) instead of "Default Light" / "Extra Fan".

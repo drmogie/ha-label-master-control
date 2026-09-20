@@ -20,6 +20,15 @@
  * Building a device for a combo that shows "-" is still done with Label
  * Master Control's own wizard, same as always.
  *
+ * Row order is a Domain/Labels toggle in the table's top-left corner
+ * (above the row labels, beside the Area column headers) - "Domain"
+ * groups rows by domain first (Light Default, Light Extra, Switch
+ * Default, ...), "Labels" groups by category first (Default Light,
+ * Default Switch, ..., Extra Light, ...). Defaults to Domain. Each row's
+ * own text always reads "<Domain> <Category>" either way - only the
+ * grouping/order changes. Remembered per-browser (localStorage), same as
+ * the right-click Area hide below.
+ *
  * Area columns can be hidden two ways:
  *   - Right-click (or long-press) an Area's column header - a quick,
  *     per-browser toggle stored in localStorage. The card's own Recheck
@@ -41,11 +50,13 @@
   // the card itself), same convention as this integration's sibling cards
   // (e.g. Piper Browser Speaker) - bump alongside const.py's CARD_VERSION
   // on every release; no shared source of truth between the two.
-  const CARD_VERSION = "2026.09.20.05";
+  const CARD_VERSION = "2026.09.20.06";
 
   const DOMAINS = ["light", "switch", "fan"];
   const DEFAULT_CATEGORIES = ["Default", "Extra"];
   const NO_AREA_LABEL = "No Area";
+  const SORT_MODES = ["domain", "label"];
+  const DEFAULT_SORT_MODE = "domain";
 
   function titleCase(word) {
     return word.charAt(0).toUpperCase() + word.slice(1);
@@ -60,19 +71,38 @@
     return list.length ? list : DEFAULT_CATEGORIES.slice();
   }
 
-  // Per-browser "quick hide" storage for the right-click toggle. Keyed by
-  // the card's own title so two differently-titled instances on the same
-  // dashboard don't fight over the same hidden list - two instances that
-  // happen to share a title (including the default, both left blank) will
-  // share hidden state, which is an acceptable simplification for what's
-  // expected to normally be a single instance per dashboard.
-  function localStorageKey(title) {
-    return `ha-label-master-control-card:hidden-areas:${title || "default"}`;
+  function buildRows(categories, sortMode) {
+    const rows = [];
+    if (sortMode === "label") {
+      categories.forEach((category) => {
+        DOMAINS.forEach((domain) => {
+          rows.push({ category, domain, label: `${titleCase(domain)} ${category}` });
+        });
+      });
+    } else {
+      DOMAINS.forEach((domain) => {
+        categories.forEach((category) => {
+          rows.push({ category, domain, label: `${titleCase(domain)} ${category}` });
+        });
+      });
+    }
+    return rows;
+  }
+
+  // Per-browser storage, shared shape for both the right-click Area hide
+  // and the Domain/Labels sort toggle - keyed by the card's own title so
+  // two differently-titled instances on the same dashboard don't fight
+  // over the same values. Two instances sharing a title (including the
+  // default, both left blank) share this state - an acceptable
+  // simplification for what's expected to normally be a single instance
+  // per dashboard.
+  function storageKey(title, suffix) {
+    return `ha-label-master-control-card:${suffix}:${title || "default"}`;
   }
 
   function loadLocallyHidden(title) {
     try {
-      const raw = window.localStorage.getItem(localStorageKey(title));
+      const raw = window.localStorage.getItem(storageKey(title, "hidden-areas"));
       const parsed = raw ? JSON.parse(raw) : [];
       return new Set(Array.isArray(parsed) ? parsed : []);
     } catch (err) {
@@ -82,10 +112,27 @@
 
   function saveLocallyHidden(title, set) {
     try {
-      window.localStorage.setItem(localStorageKey(title), JSON.stringify(Array.from(set)));
+      window.localStorage.setItem(storageKey(title, "hidden-areas"), JSON.stringify(Array.from(set)));
     } catch (err) {
       // Private browsing / storage blocked - quick-hide just won't persist
       // across reloads this session. Not worth surfacing to the user.
+    }
+  }
+
+  function loadSortMode(title) {
+    try {
+      const raw = window.localStorage.getItem(storageKey(title, "sort-mode"));
+      return SORT_MODES.includes(raw) ? raw : DEFAULT_SORT_MODE;
+    } catch (err) {
+      return DEFAULT_SORT_MODE;
+    }
+  }
+
+  function saveSortMode(title, mode) {
+    try {
+      window.localStorage.setItem(storageKey(title, "sort-mode"), mode);
+    } catch (err) {
+      // Same as above - just won't persist across reloads.
     }
   }
 
@@ -188,6 +235,7 @@
       this._categories = parseCategories(this._config.categories);
       this._checking = false;
       this._locallyHidden = loadLocallyHidden(this._config.title);
+      this._sortMode = loadSortMode(this._config.title);
       this._render();
     }
 
@@ -218,6 +266,13 @@
 
     _configHiddenAreas() {
       return Array.isArray(this._config.hidden_areas) ? this._config.hidden_areas : [];
+    }
+
+    _setSortMode(mode) {
+      if (!SORT_MODES.includes(mode) || mode === this._sortMode) return;
+      this._sortMode = mode;
+      saveSortMode(this._config.title, mode);
+      this._render();
     }
 
     async _forceRecheck() {
@@ -286,6 +341,9 @@
       this._categories = this._categories || parseCategories(this._config.categories);
       if (!this._locallyHidden) {
         this._locallyHidden = loadLocallyHidden(this._config.title);
+      }
+      if (!this._sortMode) {
+        this._sortMode = loadSortMode(this._config.title);
       }
 
       if (!this.shadowRoot) {
@@ -363,6 +421,27 @@
               opacity: 0.7;
               font-size: 0.8em;
             }
+            .sort-toggle {
+              display: inline-flex;
+              border: 1px solid var(--divider-color, #555);
+              border-radius: 6px;
+              overflow: hidden;
+              font-weight: 400;
+            }
+            .sort-toggle button {
+              border: none;
+              background: transparent;
+              color: var(--secondary-text-color);
+              padding: 3px 8px;
+              font-size: 0.75em;
+              cursor: pointer;
+              font-family: inherit;
+            }
+            .sort-toggle button + button { border-left: 1px solid var(--divider-color, #555); }
+            .sort-toggle button.active {
+              background: var(--primary-color, #03a9f4);
+              color: var(--text-primary-color, #fff);
+            }
             ha-icon-button.spin { animation: lmc-spin 1s linear infinite; }
             @keyframes lmc-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
           </style>
@@ -419,14 +498,13 @@
         return;
       }
 
-      const rows = [];
-      this._categories.forEach((category) => {
-        DOMAINS.forEach((domain) => {
-          rows.push({ category, domain, label: `${titleCase(domain)} ${category}` });
-        });
-      });
+      const rows = buildRows(this._categories, this._sortMode);
 
-      let html = "<table><thead><tr><th class=\"row-head\"></th>";
+      let html = `<table><thead><tr><th class="row-head">
+        <span class="sort-toggle">
+          <button type="button" data-mode="domain">Domain</button><button type="button" data-mode="label">Labels</button>
+        </span>
+      </th>`;
       areas.forEach((area) => {
         html += `<th class="area-head" data-area="${this._escape(area)}" title="Right-click to hide">${this._escape(
           area
@@ -469,6 +547,10 @@
       });
       wrap.querySelectorAll("th.area-head").forEach((th) => {
         th.addEventListener("contextmenu", (ev) => this._onAreaHeaderContextMenu(ev, th.dataset.area));
+      });
+      wrap.querySelectorAll(".sort-toggle button").forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.mode === this._sortMode);
+        btn.addEventListener("click", () => this._setSortMode(btn.dataset.mode));
       });
     }
 
@@ -583,7 +665,7 @@
               <span>Areas shown (unchecked = hidden permanently, for everyone viewing this dashboard)</span>
               <div class="areas-list"></div>
             </label>
-            <div class="hint">Rows are category × domain (light/switch/fan). Right-clicking an Area's column header on the card itself is a separate, quick per-browser hide - the card's own Recheck button clears those, this list is unaffected by it. Nothing here can add or edit devices - build those with Label Master Control's own wizard.</div>
+            <div class="hint">Rows are category × domain (light/switch/fan) - a Domain/Labels toggle on the card itself (top-left of the table) controls whether rows group by domain or by category first; that toggle and right-clicking an Area's column header are both quick, per-browser settings remembered in this browser only, separate from the permanent list above and unaffected by it. Nothing here can add or edit devices - build those with Label Master Control's own wizard.</div>
             <div class="version"></div>
           </div>
         `;
