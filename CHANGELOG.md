@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026.09.20.08
+- Fixed a real bug: every cell always showed "Off" regardless of the device's actual state, so toggling an entity never appeared to change anything on the card. Root cause: the matrix builder stored the entity's whole state OBJECT instead of just its state string, so `state === "on"` (and every other status comparison) silently always failed. Status now reads and updates live correctly.
+- Status dot colors are now clearer: green for On, grey for Off, orange for Unavailable/Unknown (previously On and Unavailable used harder-to-tell-apart amber/red shades, and the "always Off" bug above meant color barely mattered anyway).
+
 ## 2026.09.20.07
 - The hidden-Areas note at the bottom of the Matrix Card now reads "X of Y Areas hidden" (hidden count out of the total found) instead of just "X Areas hidden".
 

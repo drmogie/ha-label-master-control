@@ -50,7 +50,7 @@
   // the card itself), same convention as this integration's sibling cards
   // (e.g. Piper Browser Speaker) - bump alongside const.py's CARD_VERSION
   // on every release; no shared source of truth between the two.
-  const CARD_VERSION = "2026.09.20.07";
+  const CARD_VERSION = "2026.09.20.08";
 
   const DOMAINS = ["light", "switch", "fan"];
   const DEFAULT_CATEGORIES = ["Default", "Extra"];
@@ -183,7 +183,8 @@
         );
         return;
       }
-      cells.set(key, { entityId, state: states[entityId] });
+      const stateObj = states[entityId];
+      cells.set(key, { entityId, state: stateObj ? stateObj.state : undefined });
     });
 
     if (warnings.length) {
@@ -406,9 +407,9 @@
               margin-right: 6px;
               vertical-align: middle;
             }
-            .dot.on { background: var(--state-icon-active-color, #f5a623); }
+            .dot.on { background: var(--success-color, #4caf50); }
             .dot.off { background: var(--disabled-text-color, #888); }
-            .dot.na { background: var(--error-color, #db4437); opacity: 0.6; }
+            .dot.na { background: var(--warning-color, #ff9800); }
             .missing { color: var(--disabled-text-color, #888); opacity: 0.6; }
             .empty {
               padding: 24px 16px;
