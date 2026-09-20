@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026.09.20.07
+- The hidden-Areas note at the bottom of the Matrix Card now reads "X of Y Areas hidden" (hidden count out of the total found) instead of just "X Areas hidden".
+
 ## 2026.09.20.06
 - Added a Domain/Labels sort toggle to the Matrix Card, in the table's top-left corner (above the row labels, beside the Area column headers). "Domain" groups rows by domain first (Light Default, Light Extra, Switch Default, ...) - the new default. "Labels" groups by category first (Default Light, Default Switch, ..., Extra Light, ...) - the previous default. Each row's own text still always reads "<Domain> <Category>" either way; only the grouping/order changes. Remembered per-browser, same as the right-click Area hide.
 

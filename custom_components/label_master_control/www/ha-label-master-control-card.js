@@ -50,7 +50,7 @@
   // the card itself), same convention as this integration's sibling cards
   // (e.g. Piper Browser Speaker) - bump alongside const.py's CARD_VERSION
   // on every release; no shared source of truth between the two.
-  const CARD_VERSION = "2026.09.20.06";
+  const CARD_VERSION = "2026.09.20.07";
 
   const DOMAINS = ["light", "switch", "fan"];
   const DEFAULT_CATEGORIES = ["Default", "Extra"];
@@ -486,7 +486,7 @@
       );
       const hiddenCount = allAreas.length - areas.length;
       hiddenNote.textContent = hiddenCount
-        ? `${hiddenCount} Area${hiddenCount === 1 ? "" : "s"} hidden - right-click hides, Recheck (↻) un-hides right-click-hidden ones, the card editor manages permanent hides.`
+        ? `${hiddenCount} of ${allAreas.length} Areas hidden - right-click hides, Recheck (↻) un-hides right-click-hidden ones, the card editor manages permanent hides.`
         : "";
 
       if (allAreas.length === 0) {
