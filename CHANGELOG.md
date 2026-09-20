@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026.09.20.03
+- Added two more diagnostic sensors alongside **Members**: **Members On** and **Members Off**, each showing a live count (and, as its `entity_id` attribute, the matching subset) so you can see at a glance how many of a device's matched entities are currently on vs. off, right on the device's own page.
+
 ## 2026.09.20.02
 - Added a **Members** diagnostic sensor to every device (any domain) - its state is the live member count and its `entity_id` attribute is the full list, so you can see what a device is controlling right from the device's own page (Settings -> Devices & services -> that device) instead of having to open a specific master entity's Related tab.
 

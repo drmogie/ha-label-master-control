@@ -49,6 +49,12 @@ class LabelAggregator:
                 result.append(entity_id)
         return result
 
+    def off_members(self) -> list[str]:
+        """Every member not currently on - unavailable/unknown count as off
+        here, so on_members() + off_members() always adds up to members()."""
+        on = set(self.on_members())
+        return [entity_id for entity_id in self._members if entity_id not in on]
+
     def is_any_on(self) -> bool:
         return len(self.on_members()) > 0
 
