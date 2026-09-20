@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026.09.20.01
+- Every master entity now exposes its current members as an `entity_id` attribute - the same attribute HA's own native Light/Switch/Cover Group entities use, which the frontend already reads to populate that entity's **Related** tab. Open any master switch/fan/light -> More info -> Related to see exactly which real entities it's currently controlling, live off the aggregator, no new UI needed.
+
 ## 2026.09.14.5
 - Added brand images (`custom_components/label_master_control/brand/icon.png`, `icon@2x.png`, `logo.png`, `logo@2x.png`) so the integration shows a proper icon in Settings -> Devices & Services and the HACS store, same pattern as Device Emulator.
 

@@ -30,6 +30,19 @@ class MasterEntity(Entity):
         self._attr_device_info = device_info_for(entry)
         self._unsub_listener = None
 
+    @property
+    def extra_state_attributes(self) -> dict[str, list[str]]:
+        """Expose current members the same way HA's own group entities do.
+
+        `entity_id` is the attribute HA's frontend already looks for to
+        populate an entity's "Related" tab in the more-info dialog (it's
+        how a native Light/Switch/Cover Group shows what it's made of) -
+        reusing it here means Settings -> Devices & services -> Entities
+        -> this entity -> Related shows exactly what's currently being
+        controlled, live, with no extra UI to build.
+        """
+        return {"entity_id": self._aggregator.members()}
+
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
         self._unsub_listener = self._aggregator.add_listener(self._handle_aggregator_update)
