@@ -18,11 +18,12 @@ CONF_LABEL_IDS = "label_ids"
 # flow step that needs to read/write it uses the same key.
 CONF_REPRESENTATIVE_LIGHT = "representative_light"
 
-# Domains the wizard lets you build a device for. "select" is also
-# forwarded as a platform, but only to host the light domain's
-# "Representative light" picker - it's never itself a source of
-# membership.
+# Domains the wizard lets you build a device for. "select" and "sensor"
+# are also forwarded as platforms: "select" only to host the light
+# domain's "Representative light" picker, "sensor" to host the
+# "Members" diagnostic sensor every device gets regardless of domain -
+# neither is ever itself a source of membership.
 SUPPORTED_DOMAINS = ("light", "switch", "fan")
-PLATFORMS = ["switch", "fan", "light", "select"]
+PLATFORMS = ["switch", "fan", "light", "select", "sensor"]
 
 FIRST_FOUND = "__first_found__"

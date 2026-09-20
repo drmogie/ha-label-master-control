@@ -13,6 +13,7 @@ Build a "master" device that toggles every light, switch, or fan sharing a set o
 - The master light's reported brightness/color come from a "representative" member - by default the first one currently on, but pinnable to a specific light via a "Representative light" picker in that device's Configure section. It falls back to first-found again if the pinned light stops being on.
 - A device's Configure options let you change its label set later (not its domain) - handy if you relabel things and want an existing device to follow, without rebuilding it.
 - Want to see exactly what a device is controlling right now? Open the master entity's More info dialog and check the **Related** tab - it lists the current members live, the same way a native Light/Switch/Cover Group shows what it's made of.
+- Every device also gets a **Members** diagnostic sensor - its state is the live member count, right on the device's own page, no need to open a specific entity to check.
 
 ## Install
 

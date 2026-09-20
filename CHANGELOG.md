@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026.09.20.02
+- Added a **Members** diagnostic sensor to every device (any domain) - its state is the live member count and its `entity_id` attribute is the full list, so you can see what a device is controlling right from the device's own page (Settings -> Devices & services -> that device) instead of having to open a specific master entity's Related tab.
+
 ## 2026.09.20.01
 - Every master entity now exposes its current members as an `entity_id` attribute - the same attribute HA's own native Light/Switch/Cover Group entities use, which the frontend already reads to populate that entity's **Related** tab. Open any master switch/fan/light -> More info -> Related to see exactly which real entities it's currently controlling, live off the aggregator, no new UI needed.
 
