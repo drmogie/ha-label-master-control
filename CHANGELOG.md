@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026.09.20.05
+- Fixed a rendering glitch in the Matrix Card where scrolling horizontally could show a sliver of a scrolled-past Area's data bleeding past the card's left edge, in front of the sticky row-label column. Root cause: `border-collapse: collapse` combined with `position: sticky` table cells is a known rendering bug in Chromium-based WebViews - switched to `border-collapse: separate` with per-cell borders, added `overflow: hidden` to the card itself, and gave the sticky column an explicit z-index and opaque background.
+- Row labels now read "Light Default" / "Fan Extra" (domain, then category) instead of "Default Light" / "Extra Fan".
+- Area columns can now be hidden: right-click (or long-press) an Area's column header for a quick, per-browser hide - the card's own Recheck button clears those back to "show everything." The card's GUI editor also lists every Area with a checkbox for a permanent hide, saved in the card's own config, independent of the right-click list.
+
 ## 2026.09.20.04
 - Added a companion Lovelace card: **Matrix Card** (`custom:ha-label-master-control-card`). Read-only status grid - one row per category+domain combo (e.g. "Default Light", "Extra Fan"), one column per Area, showing each device's on/off state or "-" where no device exists yet for that combo. Auto-discovers every device on the dashboard with no required config; a Recheck button re-scans the entity/device/area registries directly in case anything's out of sync. Served automatically (no manual Lovelace resource needed), same pattern as Piper Browser Speaker's own card.
 - Every master entity now also exposes a `labels` attribute (its configured label set, by name) alongside the existing `entity_id` members attribute - added so the new Matrix Card (or anything else) can tell which category a device represents without guessing from its display name.

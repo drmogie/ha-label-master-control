@@ -1,8 +1,8 @@
 /**
  * Label Master Control - Matrix Card
  *
- * Read-only status grid: one row per category+domain combo (e.g. "Default
- * Light", "Extra Fan"), one column per Area, one cell per Label Master
+ * Read-only status grid: one row per category+domain combo (e.g. "Light
+ * Default", "Fan Extra"), one column per Area, one cell per Label Master
  * Control device that exists for that combo. Shows "-" wherever no device
  * has been built yet for a given Area/category/domain combo.
  *
@@ -20,6 +20,17 @@
  * Building a device for a combo that shows "-" is still done with Label
  * Master Control's own wizard, same as always.
  *
+ * Area columns can be hidden two ways:
+ *   - Right-click (or long-press) an Area's column header - a quick,
+ *     per-browser toggle stored in localStorage. The card's own Recheck
+ *     button (top right) clears these back to "show everything" - it
+ *     doesn't touch the permanent list below.
+ *   - The card's GUI editor lists every Area it currently sees with a
+ *     checkbox - unchecking one hides it for everyone viewing this
+ *     dashboard (saved in the card's own config, `hidden_areas`).
+ * The two lists are independent and combine (an Area hidden by either one
+ * is hidden).
+ *
  * No build step, no external dependencies - plain custom elements.
  */
 (() => {
@@ -30,7 +41,7 @@
   // the card itself), same convention as this integration's sibling cards
   // (e.g. Piper Browser Speaker) - bump alongside const.py's CARD_VERSION
   // on every release; no shared source of truth between the two.
-  const CARD_VERSION = "2026.09.20.04";
+  const CARD_VERSION = "2026.09.20.05";
 
   const DOMAINS = ["light", "switch", "fan"];
   const DEFAULT_CATEGORIES = ["Default", "Extra"];
@@ -47,6 +58,35 @@
       .map((s) => s.trim())
       .filter(Boolean);
     return list.length ? list : DEFAULT_CATEGORIES.slice();
+  }
+
+  // Per-browser "quick hide" storage for the right-click toggle. Keyed by
+  // the card's own title so two differently-titled instances on the same
+  // dashboard don't fight over the same hidden list - two instances that
+  // happen to share a title (including the default, both left blank) will
+  // share hidden state, which is an acceptable simplification for what's
+  // expected to normally be a single instance per dashboard.
+  function localStorageKey(title) {
+    return `ha-label-master-control-card:hidden-areas:${title || "default"}`;
+  }
+
+  function loadLocallyHidden(title) {
+    try {
+      const raw = window.localStorage.getItem(localStorageKey(title));
+      const parsed = raw ? JSON.parse(raw) : [];
+      return new Set(Array.isArray(parsed) ? parsed : []);
+    } catch (err) {
+      return new Set();
+    }
+  }
+
+  function saveLocallyHidden(title, set) {
+    try {
+      window.localStorage.setItem(localStorageKey(title), JSON.stringify(Array.from(set)));
+    } catch (err) {
+      // Private browsing / storage blocked - quick-hide just won't persist
+      // across reloads this session. Not worth surfacing to the user.
+    }
   }
 
   // Shared grid-building logic. `entities` is an array of
@@ -147,6 +187,7 @@
       this._config = config || {};
       this._categories = parseCategories(this._config.categories);
       this._checking = false;
+      this._locallyHidden = loadLocallyHidden(this._config.title);
       this._render();
     }
 
@@ -175,9 +216,18 @@
       return { title: "Label Master Control", categories: "Default, Extra" };
     }
 
+    _configHiddenAreas() {
+      return Array.isArray(this._config.hidden_areas) ? this._config.hidden_areas : [];
+    }
+
     async _forceRecheck() {
       if (!this._hass || this._checking) return;
       this._checking = true;
+      // "Recheck" doubles as "show every quick-hidden Area again" - the
+      // permanent editor-configured hidden_areas list is untouched, only
+      // the per-browser right-click list clears.
+      this._locallyHidden = new Set();
+      saveLocallyHidden(this._config.title, this._locallyHidden);
       this._render();
       try {
         const [entityRegistry, deviceRegistry, areaRegistry] = await Promise.all([
@@ -223,16 +273,30 @@
       this.dispatchEvent(event);
     }
 
+    _onAreaHeaderContextMenu(ev, areaName) {
+      ev.preventDefault();
+      this._locallyHidden.add(areaName);
+      saveLocallyHidden(this._config.title, this._locallyHidden);
+      this._render();
+    }
+
     _render() {
       if (!this._hass) return;
       this._config = this._config || {};
       this._categories = this._categories || parseCategories(this._config.categories);
+      if (!this._locallyHidden) {
+        this._locallyHidden = loadLocallyHidden(this._config.title);
+      }
 
       if (!this.shadowRoot) {
         this.attachShadow({ mode: "open" });
         this.shadowRoot.innerHTML = `
           <style>
-            ha-card { padding: 0; }
+            ha-card {
+              padding: 0;
+              overflow: hidden;
+              border-radius: var(--ha-card-border-radius, 12px);
+            }
             .header {
               display: flex;
               align-items: center;
@@ -245,7 +309,11 @@
               color: var(--ha-card-header-color, var(--primary-text-color));
             }
             .wrap { overflow-x: auto; padding: 0 16px 16px 16px; }
-            table { border-collapse: collapse; width: 100%; }
+            table {
+              border-collapse: separate;
+              border-spacing: 0;
+              width: 100%;
+            }
             th, td {
               padding: 8px 12px;
               text-align: center;
@@ -259,13 +327,16 @@
               font-weight: 500;
               position: sticky;
               left: 0;
-              background: var(--card-background-color, var(--ha-card-background));
+              z-index: 2;
+              background-color: var(--ha-card-background, var(--card-background-color, #1c1c1c));
+              box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.4);
             }
             thead th {
               color: var(--secondary-text-color);
               font-weight: 500;
               border-bottom: 1px solid var(--divider-color, #333);
             }
+            th.area-head { cursor: context-menu; }
             td.cell { cursor: default; }
             td.cell.clickable { cursor: pointer; }
             td.cell.clickable:hover { background: var(--secondary-background-color); }
@@ -286,6 +357,12 @@
               color: var(--secondary-text-color);
               text-align: center;
             }
+            .hidden-note {
+              padding: 0 16px 12px 16px;
+              color: var(--secondary-text-color);
+              opacity: 0.7;
+              font-size: 0.8em;
+            }
             ha-icon-button.spin { animation: lmc-spin 1s linear infinite; }
             @keyframes lmc-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
           </style>
@@ -295,6 +372,7 @@
               <ha-icon-button></ha-icon-button>
             </div>
             <div class="wrap"></div>
+            <div class="hidden-note"></div>
           </ha-card>
         `;
         this.shadowRoot
@@ -306,15 +384,16 @@
       titleEl.textContent = this._config.title || "Label Master Control";
 
       const refreshBtn = this.shadowRoot.querySelector("ha-icon-button");
-      refreshBtn.label = "Recheck everything";
+      refreshBtn.label = "Recheck everything (also un-hides right-click-hidden Areas)";
       refreshBtn.path =
         "M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z";
       refreshBtn.classList.toggle("spin", this._checking);
 
       const wrap = this.shadowRoot.querySelector(".wrap");
+      const hiddenNote = this.shadowRoot.querySelector(".hidden-note");
 
       const snapshot = this._forcedSnapshot || liveEntitiesFrom(this._hass);
-      const { cells, areas } = buildMatrix(
+      const { cells, areas: allAreas } = buildMatrix(
         this._categories,
         snapshot.entities,
         snapshot.devicesById,
@@ -322,21 +401,36 @@
         this._hass.states
       );
 
-      if (areas.length === 0) {
+      const configHidden = this._configHiddenAreas();
+      const areas = allAreas.filter(
+        (a) => !configHidden.includes(a) && !this._locallyHidden.has(a)
+      );
+      const hiddenCount = allAreas.length - areas.length;
+      hiddenNote.textContent = hiddenCount
+        ? `${hiddenCount} Area${hiddenCount === 1 ? "" : "s"} hidden - right-click hides, Recheck (↻) un-hides right-click-hidden ones, the card editor manages permanent hides.`
+        : "";
+
+      if (allAreas.length === 0) {
         wrap.innerHTML = `<div class="empty">No Label Master Control devices found yet. Build one with the Label Master Control wizard to see it here.</div>`;
+        return;
+      }
+      if (areas.length === 0) {
+        wrap.innerHTML = `<div class="empty">Every Area is hidden right now. Click Recheck (↻) to show right-click-hidden Areas again, or edit the card to un-hide one permanently.</div>`;
         return;
       }
 
       const rows = [];
       this._categories.forEach((category) => {
         DOMAINS.forEach((domain) => {
-          rows.push({ category, domain, label: `${category} ${titleCase(domain)}` });
+          rows.push({ category, domain, label: `${titleCase(domain)} ${category}` });
         });
       });
 
       let html = "<table><thead><tr><th class=\"row-head\"></th>";
       areas.forEach((area) => {
-        html += `<th>${this._escape(area)}</th>`;
+        html += `<th class="area-head" data-area="${this._escape(area)}" title="Right-click to hide">${this._escape(
+          area
+        )}</th>`;
       });
       html += "</tr></thead><tbody>";
 
@@ -373,6 +467,9 @@
       wrap.querySelectorAll("td.cell.clickable").forEach((td) => {
         td.addEventListener("click", () => this._onCellClick(td.dataset.entity));
       });
+      wrap.querySelectorAll("th.area-head").forEach((th) => {
+        th.addEventListener("contextmenu", (ev) => this._onAreaHeaderContextMenu(ev, th.dataset.area));
+      });
     }
 
     _escape(str) {
@@ -393,6 +490,34 @@
       this._render();
     }
 
+    _knownAreas() {
+      if (!this._hass) return [];
+      const categories = parseCategories(this._config.categories);
+      const snapshot = liveEntitiesFrom(this._hass);
+      const { areas } = buildMatrix(
+        categories,
+        snapshot.entities,
+        snapshot.devicesById,
+        snapshot.areasById,
+        this._hass.states
+      );
+      return areas;
+    }
+
+    _toggleHiddenArea(areaName, hide) {
+      const current = new Set(
+        Array.isArray(this._config.hidden_areas) ? this._config.hidden_areas : []
+      );
+      if (hide) {
+        current.add(areaName);
+      } else {
+        current.delete(areaName);
+      }
+      this._config = { ...this._config, hidden_areas: Array.from(current) };
+      this._fireChanged();
+      this._render();
+    }
+
     _render() {
       this._config = this._config || {};
       if (!this._hass) return;
@@ -409,7 +534,7 @@
               font-size: 0.9em;
               color: var(--secondary-text-color);
             }
-            input {
+            input[type="text"] {
               padding: 8px;
               border-radius: 4px;
               border: 1px solid var(--divider-color, #ccc);
@@ -418,6 +543,25 @@
               font: inherit;
             }
             .hint { font-size: 0.8em; color: var(--secondary-text-color); opacity: 0.8; }
+            .areas-list {
+              display: flex;
+              flex-direction: column;
+              gap: 6px;
+              border: 1px solid var(--divider-color, #ccc);
+              border-radius: 4px;
+              padding: 8px 12px;
+            }
+            .areas-list .row {
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              font-size: 0.9em;
+            }
+            .areas-list .empty {
+              font-size: 0.85em;
+              color: var(--secondary-text-color);
+              opacity: 0.8;
+            }
             .version {
               text-align: center;
               font-size: 0.7em;
@@ -435,7 +579,11 @@
               <span>Category labels (comma separated, matched case-insensitively)</span>
               <input id="categories" type="text" placeholder="Default, Extra" />
             </label>
-            <div class="hint">Each row is one category × domain (light/switch/fan). Columns are whatever Areas your Label Master Control devices are already assigned to. Nothing here can add or edit devices - build those with Label Master Control's own wizard.</div>
+            <label>
+              <span>Areas shown (unchecked = hidden permanently, for everyone viewing this dashboard)</span>
+              <div class="areas-list"></div>
+            </label>
+            <div class="hint">Rows are category × domain (light/switch/fan). Right-clicking an Area's column header on the card itself is a separate, quick per-browser hide - the card's own Recheck button clears those, this list is unaffected by it. Nothing here can add or edit devices - build those with Label Master Control's own wizard.</div>
             <div class="version"></div>
           </div>
         `;
@@ -449,6 +597,7 @@
         this._categoriesInput.addEventListener("change", () => {
           this._config = { ...this._config, categories: this._categoriesInput.value };
           this._fireChanged();
+          this._render();
         });
         this.shadowRoot.querySelector(".version").textContent = `v${CARD_VERSION}`;
       }
@@ -460,6 +609,41 @@
       if (this._categoriesInput !== focused) {
         this._categoriesInput.value = this._config.categories || "";
       }
+
+      const areasListEl = this.shadowRoot.querySelector(".areas-list");
+      const areas = this._knownAreas();
+      const hidden = new Set(
+        Array.isArray(this._config.hidden_areas) ? this._config.hidden_areas : []
+      );
+
+      if (areas.length === 0) {
+        areasListEl.innerHTML = `<div class="empty">No Areas found yet - build a Label Master Control device first.</div>`;
+        return;
+      }
+
+      areasListEl.innerHTML = areas
+        .map(
+          (area) => `
+            <div class="row">
+              <input type="checkbox" data-area="${this._escape(area)}" ${
+                hidden.has(area) ? "" : "checked"
+              } />
+              <span>${this._escape(area)}</span>
+            </div>
+          `
+        )
+        .join("");
+      areasListEl.querySelectorAll("input[type=checkbox]").forEach((cb) => {
+        cb.addEventListener("change", () => {
+          this._toggleHiddenArea(cb.dataset.area, !cb.checked);
+        });
+      });
+    }
+
+    _escape(str) {
+      const div = document.createElement("div");
+      div.textContent = String(str);
+      return div.innerHTML;
     }
 
     _fireChanged() {

@@ -23,7 +23,7 @@ A read-only Lovelace card auto-loads with the integration - no manual resource t
 type: custom:ha-label-master-control-card
 ```
 
-It shows a grid: one row per category+domain combo (e.g. "Default Light", "Extra Fan"), one column per Area, one cell per device that exists for that combo - on/off state, or "-" where you haven't built one yet. It finds every Label Master Control device itself; a device lands in its row by whichever category name (default "Default"/"Extra", editable in the card's own GUI editor) appears in its label set, and in its column by its own assigned Area (Settings -> Devices -> that device -> Area). A **Recheck** button (top right) re-scans the entity/device/area registries directly, in case anything looks stale.
+It shows a grid: one row per category+domain combo (e.g. "Light Default", "Fan Extra"), one column per Area, one cell per device that exists for that combo - on/off state, or "-" where you haven't built one yet. It finds every Label Master Control device itself; a device lands in its row by whichever category name (default "Default"/"Extra", editable in the card's own GUI editor) appears in its label set, and in its column by its own assigned Area (Settings -> Devices -> that device -> Area). A **Recheck** button (top right) re-scans the entity/device/area registries directly (also un-hiding any Areas hidden via right-click), in case anything looks stale. Right-click (or long-press) an Area column header to hide it quickly, per-browser; the card's own GUI editor lists every Area with a checkbox for a permanent hide shared by everyone viewing the dashboard.
 
 The card only displays - it never creates, edits, or relabels anything. Build a device for a combo that shows "-" with the wizard above, same as always.
 
